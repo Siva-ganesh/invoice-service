@@ -1,0 +1,42 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:invoice
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+#    show-sql: true
+  h2:
+    console.enabled: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            clientId: Ov23li6j8TAV0Q8CSCtz
+            clientSecret: 5ae4accbc0b30cfa38c8e0a60cfac6af6f082381
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      delivery-service:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 6
+        minimumNumberOfCalls: 6
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+        maxWaitDurationInHalfOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 2
+        eventConsumerBufferSize: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
