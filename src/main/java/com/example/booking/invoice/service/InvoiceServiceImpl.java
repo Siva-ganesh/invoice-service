@@ -8,17 +8,19 @@ import com.example.booking.invoice.entity.BillingHeader;
 import com.example.booking.invoice.entity.BillingLineInformation;
 import com.example.booking.invoice.entity.Invoice;
 import com.example.booking.invoice.repository.InvoiceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class InvoiceServiceImpl implements InvoiceService {
 
+    private static final Logger logger = LoggerFactory.getLogger(InvoiceServiceImpl.class);
     private final InvoiceRepository invoiceRepository;
-    private static final String STATUS_SUCCESS = "Success";
-    private static final String SUCCESS_MESSAGE = "Invoice saved successfully";
-
 
     public InvoiceServiceImpl(final InvoiceRepository invoiceRepository) {
         this.invoiceRepository = invoiceRepository;
@@ -39,17 +41,18 @@ public class InvoiceServiceImpl implements InvoiceService {
                     .build();
             invoice.setBillingHeader(billingHeader);
 
-            List<BillingLineInformation> billingLineInformations = invoiceDto.getBillingLines()
+            List<BillingLineInformation> billingLineInformations = Optional.ofNullable(invoiceDto.getBillingLines()).orElse(Collections.emptyList())
                     .stream()
                     .map(billingLineDto -> getBillingInformation(billingLineDto.getBillingLineInformation(), invoice))
                     .toList();
             invoice.setBillingLineInformations(billingLineInformations);
 
-            invoiceRepository.save(invoice);
+            Invoice savedInvoice = invoiceRepository.save(invoice);
+            return getInvoiceResponseDto(savedInvoice);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Exception : {}", e.getMessage());
+            return getFailedInvoiceResponseDto(e.getMessage());
         }
-        return getInvoiceResponseDto(invoice);
     }
 
     private InvoiceResponseDto getInvoiceResponseDto(Invoice invoice) {
@@ -58,6 +61,14 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .invoiceId(invoice.getId())
                 .invoiceStatus(STATUS_SUCCESS)
                 .message(SUCCESS_MESSAGE)
+                .build();
+    }
+
+    private InvoiceResponseDto getFailedInvoiceResponseDto(String errorMessage) {
+
+        return InvoiceResponseDto.builder()
+                .invoiceStatus(STATUS_FAILED)
+                .message(errorMessage)
                 .build();
     }
 
